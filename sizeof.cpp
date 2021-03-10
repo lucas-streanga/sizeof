@@ -1,4 +1,3 @@
-#include<fstream>
 #include<stdint.h>
 #include<filesystem>
 #include<iostream>
@@ -7,6 +6,16 @@
 #define KILO 1024
 #define MEGA 1048576
 #define GIGA 1073741824
+
+#define TERM_COLOR_LOG "\033[35m"
+#define TERM_COLOR_RESET "\033[0m"
+
+#if DEBUG == 1
+#define LOG(x) std::clog << TERM_COLOR_LOG << x << TERM_COLOR_RESET << '\n'
+#else
+#define LOG(x)
+#endif
+
 
 struct byte_size_and_num_files
 {
@@ -31,12 +40,12 @@ byte_size_and_num_files find_recursive(const std::filesystem::path& path)
           pa = p.path();
           if (std::filesystem::exists(p) && !std::filesystem::is_directory(p))
           {
+            LOG(bsnf.files + 1 << ": " << pa);
             try
             {
               if(std::filesystem::is_regular_file(pa))
               {
                 bsnf.size += std::filesystem::file_size(p);
-                bsnf.files++;
               }
               else
                 std::cout << "SKIPPED: size is not determinable: " << pa << "\n";
@@ -45,12 +54,13 @@ byte_size_and_num_files find_recursive(const std::filesystem::path& path)
             {
               std::cout << "SKIPPED: size is not determinable: " << pa << "\n";
             }
-            catch(std::bad_alloc)
+            catch(std::bad_alloc&)
             {
               std::cout << "Allocation error. Exiting..." << "\n";
               byte_size_and_num_files err;
               return err;
             }
+            bsnf.files++;
           }
         }
     }
@@ -58,7 +68,7 @@ byte_size_and_num_files find_recursive(const std::filesystem::path& path)
     {
       std::cout << "Unable to access file or path " << pa <<": " << e.what() << "\n";
     }
-    catch(std::bad_alloc)
+    catch(std::bad_alloc&)
     {
       std::cout << "Allocation error. Exiting..." << "\n";
       byte_size_and_num_files err;
