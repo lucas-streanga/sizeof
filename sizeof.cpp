@@ -37,10 +37,10 @@ byte_size_and_num_files find_recursive(const fs::path& path)
       {
           pa = p.path();
           //Proc is unreadable, and so is /var/cache/fwupdmgr
-          if(strstr(pa.c_str(), "/proc/") || strstr(pa.c_str(), "/var/cache/fwupdmgr"))
+          if(!strncmp(pa.c_str(), "/proc/", 5) || !strncmp(pa.c_str(), "/var/cache/fwupdmgr", 19))
           {
             //We need to skip these before trying to access any info bc we will get
-            //permission denied and iteration will end 
+            //permission denied and iteration will end
             LOG("SKIPPED: Encountered " << pa << " which is unreadable.");
             continue;
           }
