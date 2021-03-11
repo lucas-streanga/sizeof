@@ -13,7 +13,6 @@
 #define LOG(x)
 #endif
 
-
 struct byte_size_and_num_files
 {
   uintmax_t size;
@@ -26,6 +25,8 @@ struct byte_size_and_num_files
   }
 };
 
+namespace fs = std::filesystem;
+
 byte_size_and_num_files find_recursive(const std::filesystem::path& path)
 {
     byte_size_and_num_files bsnf;
@@ -35,9 +36,10 @@ byte_size_and_num_files find_recursive(const std::filesystem::path& path)
       for(const auto& p: std::filesystem::recursive_directory_iterator(path, std::filesystem::directory_options::skip_permission_denied))
       {
           pa = p.path();
-          //Proc is unreadable, and so is /var/cache..
-          if(strstr(pa.c_str(), "/proc/"))
+          //Proc is unreadable, and so is /var/cache/fwupdmgr
+          if(strstr(pa.c_str(), "/proc/") || strstr(pa.c_str(), "/var/cache/fwupdmgr"))
           {
+            LOG("SKIPPED: Encountered " << pa << " which is unreadable.");
             continue;
           }
           if (std::filesystem::exists(p) && !std::filesystem::is_directory(p))

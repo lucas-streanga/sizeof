@@ -10,7 +10,7 @@ all : $(EXE)
 $(EXE) : $(SRC)
 	g++ $(CFLAGS) $(SRC) -o $(EXE) -lstdc++fs
 
-debug: CFLAGS = -g -Wall -DDEBUG=1 -std=c++17
+debug: CFLAGS = -g -Wall -Wextra -DDEBUG=1 -std=c++17 -fsanitize=undefined
 debug: all
 
 install : $(EXE)
