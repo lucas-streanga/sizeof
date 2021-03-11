@@ -1,16 +1,14 @@
 #include<filesystem>
 #include<iostream>
 #include<iomanip>
+#include<string.h>
 
 #define KILO 1024
 #define MEGA 1048576
 #define GIGA 1073741824
 
-#define TERM_COLOR_LOG "\033[35m"
-#define TERM_COLOR_RESET "\033[0m"
-
 #if DEBUG == 1
-#define LOG(x) std::clog << TERM_COLOR_LOG << x << TERM_COLOR_RESET << '\n'
+#define LOG(x) std::clog << x << '\n'
 #else
 #define LOG(x)
 #endif
@@ -37,25 +35,31 @@ byte_size_and_num_files find_recursive(const std::filesystem::path& path)
       for(const auto& p: std::filesystem::recursive_directory_iterator(path, std::filesystem::directory_options::skip_permission_denied))
       {
           pa = p.path();
+          //Proc is unreadable, and so is /var/cache..
+          if(strstr(pa.c_str(), "/proc/"))
+          {
+            continue;
+          }
           if (std::filesystem::exists(p) && !std::filesystem::is_directory(p))
           {
             LOG(bsnf.files + 1 << ": " << pa);
             try
             {
-              if(std::filesystem::is_regular_file(pa))
+              if(std::filesystem::is_regular_file(std::filesystem::status(p)) && pa != "/dev/core")
               {
                 bsnf.size += std::filesystem::file_size(p);
+                LOG(bsnf.size);
               }
               else
-                std::cout << "SKIPPED: size is not determinable: " << pa << "\n";
+                LOG("SKIPPED: size is not determinable: " << pa << "\n");
             }
             catch(std::filesystem::filesystem_error& e)
             {
-              std::cout << "SKIPPED: size is not determinable: " << pa << "\n";
+              LOG("SKIPPED: size is not determinable: " << pa << "\n");
             }
             catch(std::bad_alloc&)
             {
-              std::cout << "Allocation error. Exiting..." << "\n";
+              std::cout << "Allocation error. " << "\n";
               byte_size_and_num_files err;
               return err;
             }
@@ -69,7 +73,7 @@ byte_size_and_num_files find_recursive(const std::filesystem::path& path)
     }
     catch(std::bad_alloc&)
     {
-      std::cout << "Allocation error. Exiting..." << "\n";
+      std::cout << "Allocation error. " << "\n";
       byte_size_and_num_files err;
       return err;
     }
@@ -97,21 +101,24 @@ int main(int argc, char ** argv)
     }
     catch(std::filesystem::filesystem_error& e)
     {
-      std::cout << "SKIPPED: size is not determinable: " << argv[1] << "\n";
+      LOG("SKIPPED: size is not determinable: " << argv[1] << "\n");
     }
   }
 
   if(bsnf.size == 0)
+  {
+    std::cout << "No size found!\n";
     return 0;
+  }
 
   std::cout << std::setprecision(2) << std::fixed;
 
   if(bsnf.size > GIGA)
-    std::cout << argv[1] << " is "  << (double) (bsnf.size / GIGA) << " gigabytes";
+    std::cout << argv[1] << " is "  << ((double) bsnf.size) / ((double) GIGA) << " gigabytes";
   else if(bsnf.size > MEGA)
-    std::cout << argv[1] << " is "  << (double) (bsnf.size / MEGA) << " megabytes";
+    std::cout << argv[1] << " is "  << ((double) bsnf.size) / ((double) MEGA) << " megabytes";
   else if(bsnf.size > KILO)
-    std::cout << argv[1] << " is "  << (double) (bsnf.size / KILO) << " kilobytes";
+    std::cout << argv[1] << " is "  << ((double) bsnf.size) / ((double) KILO) << " kilobytes";
   else
     std::cout << argv[1] << " is "  << bsnf.size << " bytes";
 
