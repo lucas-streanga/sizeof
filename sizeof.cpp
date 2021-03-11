@@ -27,35 +27,38 @@ struct byte_size_and_num_files
 
 namespace fs = std::filesystem;
 
-byte_size_and_num_files find_recursive(const std::filesystem::path& path)
+byte_size_and_num_files find_recursive(const fs::path& path)
 {
     byte_size_and_num_files bsnf;
-    std::filesystem::path pa;
+    fs::path pa;
     try
     {
-      for(const auto& p: std::filesystem::recursive_directory_iterator(path, std::filesystem::directory_options::skip_permission_denied))
+      for(const auto& p: fs::recursive_directory_iterator(path, fs::directory_options::skip_permission_denied))
       {
           pa = p.path();
           //Proc is unreadable, and so is /var/cache/fwupdmgr
           if(strstr(pa.c_str(), "/proc/") || strstr(pa.c_str(), "/var/cache/fwupdmgr"))
           {
+            //We need to skip these before trying to access any info bc we will get
+            //permission denied and iteration will end 
             LOG("SKIPPED: Encountered " << pa << " which is unreadable.");
             continue;
           }
-          if (std::filesystem::exists(p) && !std::filesystem::is_directory(p))
+          if (fs::exists(p) && !fs::is_directory(p))
           {
             LOG(bsnf.files + 1 << ": " << pa);
             try
             {
-              if(std::filesystem::is_regular_file(std::filesystem::status(p)) && pa != "/dev/core")
+              //dev/core will mess up file sized!
+              if(fs::is_regular_file(fs::status(p)) && pa != "/dev/core")
               {
-                bsnf.size += std::filesystem::file_size(p);
+                bsnf.size += fs::file_size(p);
                 LOG(bsnf.size);
               }
               else
                 LOG("SKIPPED: size is not determinable: " << pa << "\n");
             }
-            catch(std::filesystem::filesystem_error& e)
+            catch(fs::filesystem_error& e)
             {
               LOG("SKIPPED: size is not determinable: " << pa << "\n");
             }
@@ -69,7 +72,7 @@ byte_size_and_num_files find_recursive(const std::filesystem::path& path)
           }
         }
     }
-    catch(std::filesystem::filesystem_error& e)
+    catch(fs::filesystem_error& e)
     {
       std::cout << "Unable to access file or path " << pa <<": " << e.what() << "\n";
     }
@@ -91,17 +94,17 @@ int main(int argc, char ** argv)
   }
   byte_size_and_num_files bsnf;
 
-  std::filesystem::path p(argv[1]);
+  fs::path p(argv[1]);
 
-  if(std::filesystem::is_directory(p))
+  if(fs::is_directory(p))
     bsnf = find_recursive(p);
   else
   {
     try
     {
-      bsnf.size += std::filesystem::file_size(p);
+      bsnf.size += fs::file_size(p);
     }
-    catch(std::filesystem::filesystem_error& e)
+    catch(fs::filesystem_error& e)
     {
       LOG("SKIPPED: size is not determinable: " << argv[1] << "\n");
     }
