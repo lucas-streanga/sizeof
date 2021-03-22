@@ -36,21 +36,16 @@ byte_size_and_num_files find_recursive(const fs::path& path)
       for(const auto& p: fs::recursive_directory_iterator(path, fs::directory_options::skip_permission_denied))
       {
           pa = p.path();
-          //Proc is unreadable, and so is /var/cache/fwupdmgr
-          if(!strncmp(pa.c_str(), "/proc/", 5) || !strncmp(pa.c_str(), "/var/cache/fwupdmgr", 19))
+
+          try
           {
-            //We need to skip these before trying to access any info bc we will get
-            //permission denied and iteration will end
-            LOG("SKIPPED: Encountered " << pa << " which is unreadable.");
-            continue;
-          }
           if (fs::exists(p) && !fs::is_directory(p))
           {
             LOG(bsnf.files + 1 << ": " << pa);
             try
             {
               //dev/core will mess up file sized!
-              if(fs::is_regular_file(fs::status(p)) && pa != "/dev/core")
+              if(fs::is_regular_file(fs::status(p)) && pa != "/dev/core" && pa != "/proc/kcore")
               {
                 bsnf.size += fs::file_size(p);
                 LOG(bsnf.size);
@@ -71,6 +66,11 @@ byte_size_and_num_files find_recursive(const fs::path& path)
             bsnf.files++;
           }
         }
+        catch(fs::filesystem_error& e)
+        {
+            LOG("SKIPPED: size is not determinable: " << pa << "\n");
+        }
+      }
     }
     catch(fs::filesystem_error& e)
     {
