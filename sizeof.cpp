@@ -13,6 +13,8 @@
 #define LOG(x)
 #endif
 
+#define MAX_RETRY 20
+
 struct byte_size_and_num_files
 {
   uintmax_t size;
@@ -27,10 +29,20 @@ struct byte_size_and_num_files
 
 namespace fs = std::filesystem;
 
+unsigned int g_tries;
+
 byte_size_and_num_files find_recursive(const fs::path& path)
 {
+    g_tries++;
+    if(g_tries > MAX_RETRY)
+    {
+      printf("Max retries (%u) reached at directory %s\n", MAX_RETRY, path.c_str());
+      byte_size_and_num_files n;
+      return n;
+    }
     byte_size_and_num_files bsnf;
     fs::path pa;
+    fs::path cur_directory;
     try
     {
       for(const auto& p: fs::recursive_directory_iterator(path, fs::directory_options::skip_permission_denied))
@@ -39,32 +51,37 @@ byte_size_and_num_files find_recursive(const fs::path& path)
 
           try
           {
-          if (fs::exists(p) && !fs::is_directory(p))
-          {
-            LOG(bsnf.files + 1 << ": " << pa);
-            try
+            if(fs::is_directory(p))
             {
-              //dev/core will mess up file sized!
-              if(fs::is_regular_file(fs::status(p)) && pa != "/dev/core" && pa != "/proc/kcore")
+              cur_directory = pa;
+              continue;
+            }
+            if (fs::exists(p) && !fs::is_directory(p))
+            {
+              LOG(bsnf.files + 1 << ": " << pa);
+              try
               {
-                bsnf.size += fs::file_size(p);
-                LOG(bsnf.size);
+                //dev/core will mess up file sized!
+                if(fs::is_regular_file(fs::status(p)) && pa != "/dev/core" && pa != "/proc/kcore")
+                {
+                  bsnf.size += fs::file_size(p);
+                  LOG(bsnf.size);
+                }
+                else
+                  LOG("SKIPPED: size is not determinable: " << pa << "\n");
               }
-              else
+              catch(fs::filesystem_error& e)
+              {
                 LOG("SKIPPED: size is not determinable: " << pa << "\n");
+              }
+              catch(std::bad_alloc&)
+              {
+                std::cout << "Allocation error. " << "\n";
+                byte_size_and_num_files err;
+                return err;
+              }
+              bsnf.files++;
             }
-            catch(fs::filesystem_error& e)
-            {
-              LOG("SKIPPED: size is not determinable: " << pa << "\n");
-            }
-            catch(std::bad_alloc&)
-            {
-              std::cout << "Allocation error. " << "\n";
-              byte_size_and_num_files err;
-              return err;
-            }
-            bsnf.files++;
-          }
         }
         catch(fs::filesystem_error& e)
         {
@@ -75,6 +92,9 @@ byte_size_and_num_files find_recursive(const fs::path& path)
     catch(fs::filesystem_error& e)
     {
       std::cout << "Unable to access file or path " << pa <<": " << e.what() << "\n";
+      byte_size_and_num_files temp = find_recursive(cur_directory);
+      bsnf.size += temp.size;
+      bsnf.files += temp.files;
     }
     catch(std::bad_alloc&)
     {
@@ -92,6 +112,7 @@ int main(int argc, char ** argv)
     printf("No path or file specified...\n");
     return 0;
   }
+  g_tries = 0;
   byte_size_and_num_files bsnf;
 
   fs::path p(argv[1]);
