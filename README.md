@@ -22,6 +22,11 @@ so that it may be run system wide. The install path may be changed by editing th
 for example: ```make install INSTALL_PATH=~/programs```. This program only relies on the C++17 standard libraries,
 and as such your version of GCC must support these features to compile the program.
 
+## Notes
+- Non-regular files like sockets, pipes, and devices, are skipped. 
+- The returned file size is the actual size, not the block size as you would see with du.
+- No file contents are ever opened. 
+
 ## Bugs
 
 - Fixed issues with root filesystems like /proc/. 
