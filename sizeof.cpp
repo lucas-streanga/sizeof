@@ -150,6 +150,9 @@ int main(int argc, char ** argv)
     return 0;
   }
 
+  std::cout << std::setprecision(2) << std::fixed;
+
+
   if(bsnf.size > GIGA)
     std::cout << argv[1] << " is "  << ((double) bsnf.size) / ((double) GIGA) << " gigabytes";
   else if(bsnf.size > MEGA)
