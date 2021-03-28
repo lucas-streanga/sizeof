@@ -13,7 +13,7 @@ Sample run:
 ```
 sizeof ~ -v
 SKIPPED: size is not determinable: "/home/lucas/.steam/steam.pipe"
-/home/lucas is 18.00 gigabytes with 136223 files.
+/home/lucas is 206.09 gigabytes with 494081 files.
 ```
 
 ## Compilation
