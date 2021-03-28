@@ -11,7 +11,7 @@ Any file that is skipped because the size it not determinable will be printed on
 and running total will be printed with super verbose output. 
 Sample run:
 ```
-sizeof ~
+sizeof ~ -v
 SKIPPED: size is not determinable: "/home/lucas/.steam/steam.pipe"
 /home/lucas is 18.00 gigabytes with 136223 files.
 ```
