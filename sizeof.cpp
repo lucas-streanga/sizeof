@@ -7,11 +7,9 @@
 #define MEGA 1048576
 #define GIGA 1073741824
 
-#if DEBUG == 1
-#define LOG(x) std::clog << x << '\n'
-#else
-#define LOG(x)
-#endif
+//Verbose outputs
+#define VLOG(x) if(g_verbose) {std::clog << x << '\n';}
+#define VVLOG(x) if(g_super_verbose) {std::clog << x << '\n';}
 
 #define MAX_RETRY 20
 
@@ -30,6 +28,8 @@ struct byte_size_and_num_files
 namespace fs = std::filesystem;
 
 unsigned int g_tries;
+bool g_verbose;
+bool g_super_verbose;
 
 byte_size_and_num_files find_recursive(const fs::path& path)
 {
@@ -58,21 +58,22 @@ byte_size_and_num_files find_recursive(const fs::path& path)
             }
             if (fs::exists(p) && !fs::is_directory(p))
             {
-              LOG(bsnf.files + 1 << ": " << pa);
+              VVLOG("File " << bsnf.files + 1 << ": " << pa);
               try
               {
                 //dev/core will mess up file sized!
                 if(fs::is_regular_file(fs::status(p)) && pa != "/dev/core" && pa != "/proc/kcore")
                 {
-                  bsnf.size += fs::file_size(p);
-                  LOG(bsnf.size);
+                  uintmax_t temp_size = fs::file_size(p);
+                  bsnf.size += temp_size;
+                  VVLOG("Size: " << temp_size << "B Total: " << bsnf.size << "B");
                 }
                 else
-                  LOG("SKIPPED: size is not determinable: " << pa << "\n");
+                  VLOG("SKIPPED: size is not determinable: " << pa);
               }
               catch(fs::filesystem_error& e)
               {
-                LOG("SKIPPED: size is not determinable: " << pa << "\n");
+                VLOG("SKIPPED: size is not determinable: " << pa);
               }
               catch(std::bad_alloc&)
               {
@@ -85,7 +86,7 @@ byte_size_and_num_files find_recursive(const fs::path& path)
         }
         catch(fs::filesystem_error& e)
         {
-            LOG("SKIPPED: size is not determinable: " << pa << "\n");
+            VLOG("SKIPPED: size is not determinable: " << pa);
         }
       }
     }
@@ -113,9 +114,21 @@ int main(int argc, char ** argv)
     return 0;
   }
   g_tries = 0;
+  g_verbose = 0;
+  g_super_verbose = 0;
   byte_size_and_num_files bsnf;
 
   fs::path p(argv[1]);
+
+  //Verbose outputs!
+  if(argc > 2)
+  {
+    std::string s(argv[argc - 1]);
+    if(s == "-v")
+      g_verbose = 1;
+    else if(s == "-vv")
+      g_super_verbose = 1;
+  }
 
   if(fs::is_directory(p))
     bsnf = find_recursive(p);
@@ -127,7 +140,7 @@ int main(int argc, char ** argv)
     }
     catch(fs::filesystem_error& e)
     {
-      LOG("SKIPPED: size is not determinable: " << argv[1] << "\n");
+      VLOG("SKIPPED: size is not determinable: " << argv[1]);
     }
   }
 
@@ -136,8 +149,6 @@ int main(int argc, char ** argv)
     std::cout << "No size found!\n";
     return 0;
   }
-
-  std::cout << std::setprecision(2) << std::fixed;
 
   if(bsnf.size > GIGA)
     std::cout << argv[1] << " is "  << ((double) bsnf.size) / ((double) GIGA) << " gigabytes";
