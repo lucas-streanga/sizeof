@@ -7,7 +7,8 @@ passed as the last argument for verbose output, and the ```-vv``` flag for super
 
 ## Output
 sizeof will output the size in a human readable unit (bytes, KiB, MiB, GiB) and the number of files if the input is a directory.
-Any file that is skipped because the size it not determinable will be printed.
+Any file that is skipped because the size it not determinable will be printed only if verbose output is enabled. The individial sizes, counts
+and running total will be printed with super verbose output. 
 Sample run:
 ```
 sizeof ~
@@ -22,5 +23,5 @@ for example: ```make install INSTALL_PATH=~/programs```. This program only relie
 and as such your version of GCC must support these features to compile the program.
 
 ## Bugs
-Attempting sizeof on the root directory (/) will cause incorrect output. The program will not terminate, but
-it is not able to properly skip through the files like intended, thus leading to incorrect output. 
+
+- Fixed issues with root filesystems like /proc/. 
