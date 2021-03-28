@@ -2,7 +2,8 @@
 sizeof is a command line program for determining the size of files and directories in bytes and number of files. It is written in C++.
 
 # Usage
-Simply pass in a file or directory as the first command line argument: ```sizeof my_file```.
+Simply pass in a file or directory as the first command line argument: ```sizeof my_file```. The ```-v``` option can be 
+passed as the last argument for verbose output, and the ```-vv``` flag for super verbose output. 
 
 ## Output
 sizeof will output the size in a human readable unit (bytes, KiB, MiB, GiB) and the number of files if the input is a directory.
